@@ -63,7 +63,7 @@ void dump_ast(const prepro::ASTNode *node, int indent = 0) {
   }
 }
 
-} // namespace
+}
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
   } 
   catch (const std::exception& e) {
-    std::cerr << "Error during execution: " << e.what() << "\n";
+    std::cerr << "Error: " << e.what() << "\n";
     return 1;
   }
   return 0;

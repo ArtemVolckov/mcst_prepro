@@ -82,7 +82,7 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro() {
     while (!is_at_end()) {
       token = &peek();
 
-      if (token->type == TokenType::ID || token->type == TokenType::DIRECTIVE_OPEN) break;
+      if (token->type == TokenType::ID || token->type == TokenType::DIRECTIVE_OPEN || token->type == TokenType::DIRECTIVE_CLOSE) break;
       token = &advance();
       text = {text.data(), static_cast<size_t>((token->lexeme.data() + token->lexeme.size()) - text.data())};
     }
