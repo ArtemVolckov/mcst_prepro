@@ -1,52 +1,36 @@
 #pragma once
 
-#include <prepro/AST.hpp>
-#include <string>
-#include <string_view>
+#include <prepro/ast.hpp>
+#include <prepro/lexer.hpp>
+
 #include <vector>
+#include <string_view>
+#include <memory>
+
+namespace prepro {
 
 class Parser {
-private:
-  std::string_view input;
-  size_t position = 0;
-  
-  bool is_eof() const { return position >= input.length(); }
- 
-  /* получение следующего символа */
-  bool get_symbol(char &symbol) {
-    if (is_eof())
-      return false;
-    symbol = input[position];
-    position++;
-    return true;
-  }
-  /* сравнение строк с текущей позиции */
-  bool match(std::string_view substr) const {
-    if (position + substr.length() > input.length()) {
-      return false;
-    }
-    return input.substr(position, substr.length()) == substr;
-  }
-  /* сравнение строк с текущей позиции и смещение позиции */
-  bool match_and_consume(std::string_view substr) {
-    if (match(substr)) {
-      position += substr.length();
-      return true;
-    }
-    return false;
-  }
-  /* пропуск пробелов и табуляций */
-  void skip_spaces() {
-    while (!is_eof() && (input[position] == ' ' || input[position] == '\t'))
-      position++;
-  }
-  void parse_directive(std::vector<ASTNode> &ast);
-  void parse_define(std::vector<ASTNode> &ast);
-  void parse_defblock(std::vector<ASTNode> &ast);
-  void parse_block(std::vector<ASTNode> &ast);
-  void parse_scope(std::vector<ASTNode> &ast);
+  const std::vector<Token> &tokens_;
+  size_t pos_ = 0;
+
+  bool is_at_end() const;
+
+  const Token& peek();
+  const Token& advance();
+
+  [[noreturn]]
+  void error(const Token& token, std::string_view message) const;
+
+  std::unique_ptr<ScopeNode> parse_scope();
+  std::unique_ptr<DefBlockNode> parse_defblock();
+  std::unique_ptr<BlockNode> parse_block();
+  std::unique_ptr<DefineNode> parse_define();
+
+  std::vector<std::unique_ptr<ASTNode>> parse_macro();
 
 public:
-  Parser(std::string_view text) : input(text) {}
-  std::vector<ASTNode> parse();
+  Parser(const std::vector<Token> &tokens) : tokens_(tokens) {}
+  std::unique_ptr<ScopeNode> parse();
 };
+
+}
