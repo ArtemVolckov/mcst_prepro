@@ -10,20 +10,20 @@
 using namespace prepro;
 
 template <typename T>
-void run_test(std::string_view name, T test) {
+void run_test(const std::string_view &name, T test) {
   std::cout << "[ RUN      ] " << name << '\n';
   test();
   std::cout << "[       OK ] " << name << '\n';
 }
 
-void check_token_lexeme(const Token &token, TokenType type, std::string_view lexeme) {
-  assert(token.type == type);
-  assert(token.lexeme == lexeme);
+void check_token_lexeme(const Token &token, TokenType type, const std::string_view &lexeme) {
+  assert(token.type_ == type);
+  assert(token.lexeme_ == lexeme);
 }
 
 void check_line_column(const Token &token, size_t line, size_t column) {
-  assert(token.line == line);
-  assert(token.column == column);
+  assert(token.line_ == line);
+  assert(token.column_ == column);
 }
 
 void test_basic_tokens() {
@@ -80,19 +80,16 @@ void test_newlines() {
 void test_id() {
   Lexer lexer1("hello");
   std::vector<Token> tokens1 = lexer1.tokenize();
-
   assert(tokens1.size() == 1);
   check_token_lexeme(tokens1[0], TokenType::ID, "hello");
 
   Lexer lexer2("abc123_def");
   std::vector<Token> tokens2 = lexer2.tokenize();
-  
   assert(tokens2.size() == 1);
   check_token_lexeme(tokens2[0], TokenType::ID, "abc123_def");
   
   Lexer lexer3("_abc");
   std::vector<Token> tokens3 = lexer3.tokenize();
-  
   assert(tokens3.size() == 2);
   check_token_lexeme(tokens3[0], TokenType::TEXT, "_");
   check_token_lexeme(tokens3[1], TokenType::ID, "abc");

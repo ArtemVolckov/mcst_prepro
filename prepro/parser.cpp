@@ -91,10 +91,6 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro() {
   return macro;
 }
 
-bool Parser::is_at_end() const {
-  return pos_ >= tokens_.size();
-}
-
 const Token &Parser::peek() {
   return tokens_[pos_];
 }

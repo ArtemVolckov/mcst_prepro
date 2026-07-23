@@ -20,26 +20,33 @@ enum class TokenType {
 };
 
 struct Token {
-  TokenType type;
-  std::string_view lexeme;
-  size_t line;
-  size_t column;
+  TokenType type_;
+  std::string_view lexeme_;
+  size_t line_;
+  size_t column_;
 };
 
 class Lexer {
+public:
+  Lexer(const std::string_view &src) : src_(src) {}
+  std::vector<Token> tokenize();
+
+private:
   std::string_view src_;
   size_t pos_    = 0;
   size_t line_   = 1;
   size_t column_ = 1;
 
-  bool is_eof() const noexcept { return pos_ >= src_.length(); }
+  bool is_eof() const noexcept { 
+    return pos_ >= src_.length(); 
+  }
 
   char peek() const noexcept;
   void advance() noexcept;
 
-  bool check(std::string_view str) const noexcept;
+  bool check(const std::string_view &str) const noexcept;
+  bool match(const std::string_view &str) noexcept;
   bool match(char c) noexcept;
-  bool match(std::string_view str) noexcept;
 
   static constexpr bool is_space_char(char c) noexcept {
     return (c == ' ' || c == '\t' || c == '\r');
@@ -52,10 +59,6 @@ class Lexer {
   }
 
   Token next();
-
-public:
-  Lexer(std::string_view src) : src_(src) {}
-  std::vector<Token> tokenize();
 };
 
 std::ostream &operator<<(std::ostream &os, TokenType type);

@@ -8,7 +8,7 @@
 
 namespace {
 
-std::string escape(std::string_view lexeme) {
+std::string escape(const std::string_view &lexeme) {
   std::string res;
 
   for (char c : lexeme) {
@@ -30,7 +30,6 @@ int main(int argc, char *argv[]) {
     return 1;
   } 
   std::ifstream file(argv[1]);
-
   if (!file) {
     std::cerr << "Cannot open file\n";
     return 1;
@@ -41,9 +40,9 @@ int main(int argc, char *argv[]) {
   std::vector<prepro::Token> tokens = lexer.tokenize();
 
   for (const auto &token : tokens) {
-    std::cout << token.line           << ':'
-              << token.column         << "  "
-              << token.type           << "  \""
-              << escape(token.lexeme) << "\"\n";
+    std::cout << token.line_           << ':'
+              << token.column_         << "  "
+              << token.type_           << "  \""
+              << escape(token.lexeme_) << "\"\n";
   }
 }

@@ -13,7 +13,9 @@ class Parser {
   const std::vector<Token> &tokens_;
   size_t pos_ = 0;
 
-  bool is_at_end() const;
+  bool is_at_end() const noexcept {
+    return pos_ >= tokens_.size();
+  }
 
   const Token& peek();
   const Token& advance();
