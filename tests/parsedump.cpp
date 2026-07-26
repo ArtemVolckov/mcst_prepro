@@ -80,9 +80,7 @@ int main(int argc, char *argv[]) {
  
   try {
     prepro::Lexer lexer(src);
-    std::vector<prepro::Token> tokens = lexer.tokenize();
-
-    prepro::Parser parser(tokens);
+    prepro::Parser parser(lexer.tokenize());
     std::unique_ptr<prepro::ScopeNode> root = parser.parse();
 
     dump_ast(root.get());
