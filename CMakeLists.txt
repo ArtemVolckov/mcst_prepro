@@ -2,14 +2,17 @@ cmake_minimum_required(VERSION 3.15)
 project(prepro CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(prepro_lib STATIC
     prepro/lexer.cpp
     prepro/parser.cpp
     prepro/preprocessor.cpp
+)
+
+target_compile_features(prepro_lib PUBLIC cxx_std_20)
+
+target_include_directories(prepro_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_executable(pp prepro/main.cpp)

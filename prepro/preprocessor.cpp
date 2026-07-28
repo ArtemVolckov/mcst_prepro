@@ -85,11 +85,6 @@ void Preprocessor::process_node(const ASTNode &node, Environment &env, std::stri
       process_scope(scope, env, out);
       return;
     }
-    case NodeType::DEFINE: {
-      const auto &define = static_cast<const DefineNode &>(node);
-      env.define(define.id_, std::string(define.value_));
-      return;
-    }
     case NodeType::DEF_BLOCK: {
       const auto &block = static_cast<const DefBlockNode &>(node);
       env.define_block(block);
@@ -98,6 +93,11 @@ void Preprocessor::process_node(const ASTNode &node, Environment &env, std::stri
     case NodeType::BLOCK: {
       const auto &block = static_cast<const BlockNode &>(node);
       process_block(block, env, out);
+      return;
+    }
+    case NodeType::DEFINE: {
+      const auto &define = static_cast<const DefineNode &>(node);
+      env.define(define.id_, std::string(define.value_));
       return;
     }
   }
