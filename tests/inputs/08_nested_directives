@@ -1,0 +1,22 @@
+Start
+
+<: define VALUE 100 :>
+
+<: defblock FUNC(x, y)
+before
+
+<:
+hidden scope
+
+<: define LOCAL local_value :>
+
+:>
+
+after
+:>
+
+HELLO
+
+<: block FUNC(abc, def) :>
+
+End

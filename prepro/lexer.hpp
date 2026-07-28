@@ -57,10 +57,9 @@ private:
   static constexpr bool is_id_body(char c) noexcept {
     return (is_id_start(c) || (c >= '0' && c <= '9') || c == '_');
   }
-
   Token next();
 };
 
-std::ostream &operator<<(std::ostream &os, TokenType type);
+std::ostream &operator <<(std::ostream &os, TokenType type);
 
 }

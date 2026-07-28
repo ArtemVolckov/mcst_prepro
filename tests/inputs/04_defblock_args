@@ -1,0 +1,3 @@
+<: defblock SUM(a, b, c)
+a + b + c
+:>

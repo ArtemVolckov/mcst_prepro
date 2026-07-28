@@ -10,6 +10,12 @@
 
 namespace prepro {
 
+enum class MacroStop {
+  EndOfFile,
+  DIRECTIVE_CLOSE,
+  BLOCK_ARGUMENT
+};
+
 class Parser {
 public:
   Parser(std::vector<Token> &&tokens) : tokens_(std::move(tokens)) {}
@@ -31,7 +37,7 @@ private:
   std::unique_ptr<BlockNode> parse_block();
   std::unique_ptr<DefineNode> parse_define();
 
-  std::vector<std::unique_ptr<ASTNode>> parse_macro(bool expect_close);
+  std::vector<std::unique_ptr<ASTNode>> parse_macro(MacroStop stop);
   
   [[noreturn]]
   void error(const Token &token, const std::string_view &message) const;

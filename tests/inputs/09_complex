@@ -1,0 +1,36 @@
+Program begin
+
+<: define PI 3.1415926 :>
+
+<: define AUTHOR Pavel Frolov :>
+
+<: defblock MAKE_STRUCT(name, body)
+struct name
+{
+body
+};
+:>
+
+Some ordinary text.
+
+<:
+Visible only inside this scope.
+
+<: define LOCAL_VALUE 42 :>
+
+<: defblock INNER(arg)
+Argument:
+arg
+:>
+
+<: block INNER(test value) :>
+
+:>
+
+<: block MAKE_STRUCT(
+Point,
+int x;
+int y;
+) :>
+
+Program end.

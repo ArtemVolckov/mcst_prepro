@@ -9,7 +9,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_library(prepro_lib STATIC
     prepro/lexer.cpp
     prepro/parser.cpp
+    prepro/preprocessor.cpp
 )
+
+add_executable(pp prepro/main.cpp)
+target_link_libraries(pp prepro_lib)
 
 add_executable(lexdump tests/lexdump.cpp)
 target_link_libraries(lexdump prepro_lib)

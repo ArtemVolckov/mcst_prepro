@@ -1,7 +1,0 @@
-<: define hello hello:>
-
-<: scope
-hello
-:>
-
-int

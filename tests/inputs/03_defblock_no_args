@@ -1,0 +1,4 @@
+<: defblock HELLO()
+Hello!
+This is a macro.
+:>
