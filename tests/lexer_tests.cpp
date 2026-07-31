@@ -1,9 +1,10 @@
 #include <prepro/lexer.hpp>
 
 #include <iostream>
-#include <cassert>
 #include <vector>
 #include <string_view>
+#include <cassert>
+#include <cstddef>
 
 #define RUN_TEST(test_func) run_test(#test_func, test_func)
 
@@ -11,9 +12,9 @@ using namespace prepro;
 
 template <typename T>
 void run_test(const std::string_view &name, T test) {
-  std::cout << "[ RUN      ] " << name << '\n';
+  std::cout << "[ ЗАПУСК    ] " << name << '\n';
   test();
-  std::cout << "[       OK ] " << name << '\n';
+  std::cout << "[        ОК ] " << name << '\n';
 }
 
 void check_token_lexeme(const Token &token, TokenType type, const std::string_view &lexeme) {
@@ -146,7 +147,7 @@ void test_mixed() {
 }
 
 int main() {
-  std::cout << "--- LEXER UNIT TESTS ---\n\n";
+  std::cout << "--- ЮНИТ-ТЕСТЫ ЛЕКСЕРА ---\n\n";
 
   RUN_TEST(test_basic_tokens);
   RUN_TEST(test_spaces);
@@ -156,5 +157,5 @@ int main() {
   RUN_TEST(test_text);
   RUN_TEST(test_mixed);
 
-  std::cout << "\n--- ALL TESTS PASSED ---\n";
+  std::cout << "\n--- ВСЕ ТЕСТЫ ПРОЙДЕНЫ ---\n";
 }

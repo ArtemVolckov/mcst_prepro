@@ -7,6 +7,7 @@
 #include <string_view>
 #include <memory>
 #include <utility>
+#include <cstddef>
 
 namespace prepro {
 
@@ -32,10 +33,10 @@ private:
   const Token &previous(size_t n = 1) const noexcept;
   const Token &advance() noexcept;
 
-  std::unique_ptr<ScopeNode> parse_scope();
-  std::unique_ptr<DefBlockNode> parse_defblock();
-  std::unique_ptr<BlockNode> parse_block();
-  std::unique_ptr<DefineNode> parse_define();
+  std::unique_ptr<ScopeNode> parse_scope(size_t line, size_t column);
+  std::unique_ptr<DefBlockNode> parse_defblock(size_t line, size_t column);
+  std::unique_ptr<BlockNode> parse_block(size_t line, size_t column);
+  std::unique_ptr<DefineNode> parse_define(size_t line, size_t column);
 
   std::vector<std::unique_ptr<ASTNode>> parse_macro(MacroStop stop);
   

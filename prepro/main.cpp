@@ -2,12 +2,14 @@
 #include <prepro/parser.hpp>
 #include <prepro/ast.hpp>
 #include <prepro/preprocessor.hpp>
+#include <boost/program_options.hpp>
 
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <memory>
 #include <string>
+#include <memory>
+#include <exception>
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -16,7 +18,7 @@ int main(int argc, char *argv[]) {
   }
   std::ifstream file(argv[1]);
   if (!file) {
-    std::cerr << "Cannot open file\n";
+    std::cerr << "чо\n";
     return 1;
   }
   std::string src{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};

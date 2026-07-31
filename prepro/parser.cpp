@@ -1,8 +1,14 @@
+#include <prepro/ast.hpp>
+#include <prepro/lexer.hpp>
 #include <prepro/parser.hpp>
 
 #include <vector>
+#include <string>
 #include <string_view>
 #include <memory>
+#include <cstddef>
+#include <utility>
+#include <stdexcept>
 
 namespace prepro {
 
@@ -22,30 +28,30 @@ const Token &Parser::previous(size_t n) const noexcept {
 }
 
 std::unique_ptr<ScopeNode> Parser::parse() {
-  return std::make_unique<ScopeNode>(parse_macro(MacroStop::EndOfFile));
+  return std::make_unique<ScopeNode>(parse_macro(MacroStop::EndOfFile), 1, 1);
 }
 
-std::unique_ptr<ScopeNode> Parser::parse_scope() {
+std::unique_ptr<ScopeNode> Parser::parse_scope(size_t line, size_t column) {
   if (previous().type_ == TokenType::NEWLINE) {
-    return std::make_unique<ScopeNode>(parse_macro(MacroStop::DIRECTIVE_CLOSE));
+    return std::make_unique<ScopeNode>(parse_macro(MacroStop::DIRECTIVE_CLOSE), line, column);
   }
   const Token *token = &advance();
   if (token->type_ == TokenType::SPACE) {
     token = &advance();
   }
   if (token->type_ != TokenType::NEWLINE) {
-    error(*token, "expected newline after 'scope'");
+    error(*token, "ожидался перенос строки после 'scope'");
   }
-  return std::make_unique<ScopeNode>(parse_macro(MacroStop::DIRECTIVE_CLOSE));
+  return std::make_unique<ScopeNode>(parse_macro(MacroStop::DIRECTIVE_CLOSE), line, column);
 }
 
-std::unique_ptr<DefBlockNode> Parser::parse_defblock() {
+std::unique_ptr<DefBlockNode> Parser::parse_defblock(size_t line, size_t column) {
   const Token *token = &advance();
   if (token->type_ == TokenType::SPACE) {
     token = &advance();
   }
   if (token->type_ != TokenType::ID) {
-    error(*token, "expected id after 'defblock'");
+    error(*token, "ожидался идентификатор после 'defblock'");
   }
   const std::string_view &id = token->lexeme_;
   
@@ -54,7 +60,7 @@ std::unique_ptr<DefBlockNode> Parser::parse_defblock() {
     token = &advance();
   }
   if (token->type_ != TokenType::LPAREN) {
-    error(*token, "expected '('");
+    error(*token, "ожидалась '('");
   }
   std::vector<std::string_view> args;
 
@@ -68,9 +74,9 @@ std::unique_ptr<DefBlockNode> Parser::parse_defblock() {
       token = &advance();
     }
     if (token->type_ != TokenType::NEWLINE) {
-      error(*token, "expected newline after after list of arguments");
+      error(*token, "ожидался перенос строки после списка аргументов");
     }
-    return std::make_unique<DefBlockNode>(id, std::move(args), parse_macro(MacroStop::DIRECTIVE_CLOSE));
+    return std::make_unique<DefBlockNode>(id, std::move(args), parse_macro(MacroStop::DIRECTIVE_CLOSE), line, column);
   }
 
   for (;;) {
@@ -78,7 +84,7 @@ std::unique_ptr<DefBlockNode> Parser::parse_defblock() {
       token = &advance();
     }
     if (token->type_ != TokenType::ID) {
-      error(*token, "expected argument name");
+      error(*token, "ожидалось имя аргумента");
     }
     args.push_back(token->lexeme_);
 
@@ -90,7 +96,7 @@ std::unique_ptr<DefBlockNode> Parser::parse_defblock() {
       break;
     }
     if (token->type_ != TokenType::COMMA) {
-      error(*token, "expected ',' or ')'");
+      error(*token, "ожидалась ',' или ')'");
     }
     token = &advance();
   }
@@ -99,29 +105,29 @@ std::unique_ptr<DefBlockNode> Parser::parse_defblock() {
     token = &advance();
   }
   if (token->type_ != TokenType::NEWLINE) {
-    error(*token, "expected newline after list of arguments");
+    error(*token, "ожидался перенос строки после списка аргументов");
   }
-  return std::make_unique<DefBlockNode>(id, std::move(args), parse_macro(MacroStop::DIRECTIVE_CLOSE));
+  return std::make_unique<DefBlockNode>(id, std::move(args), parse_macro(MacroStop::DIRECTIVE_CLOSE), line, column);
 }
 
-std::unique_ptr<BlockNode> Parser::parse_block() {
-  const Token* token = &advance();
+std::unique_ptr<BlockNode> Parser::parse_block(size_t line, size_t column) {
+  const Token *token = &advance();
   if (token->type_ == TokenType::SPACE) {
     token = &advance();
   }
   if (token->type_ != TokenType::ID) {
-    error(*token, "expected id after 'block'");
+    error(*token, "ожидался идентификатор после 'block'");
   }
-  const std::string_view& id = token->lexeme_;
+  const std::string_view &id = token->lexeme_;
 
   token = &advance();
   if (token->type_ == TokenType::SPACE) {
     token = &advance();
   }
   if (token->type_ != TokenType::LPAREN) {
-    error(*token, "expected '('");
+    error(*token, "ожидалась '('");
   }
-  std::vector<std::unique_ptr<ASTNode>> args;
+  std::vector<std::unique_ptr<ScopeNode>> args;
 
   token = &advance();
   if (token->type_ == TokenType::SPACE) {
@@ -133,9 +139,9 @@ std::unique_ptr<BlockNode> Parser::parse_block() {
       token = &advance();
     }
     if (token->type_ != TokenType::DIRECTIVE_CLOSE) {
-      error(*token, "expected ':>' after list of arguments");
+      error(*token, "ожидалось ':>' после списка аргументов");
     }
-    return std::make_unique<BlockNode>(id, std::move(args));
+    return std::make_unique<BlockNode>(id, std::move(args), line, column);
   }
   if (previous(2).type_ == TokenType::SPACE) {
     pos_ -= 2;
@@ -145,7 +151,8 @@ std::unique_ptr<BlockNode> Parser::parse_block() {
   }
 
   for (;;) {
-    args.push_back(std::make_unique<ScopeNode>(parse_macro(MacroStop::BLOCK_ARGUMENT)));
+    const Token &arg_begin = peek();
+    args.push_back(std::make_unique<ScopeNode>(parse_macro(MacroStop::BLOCK_ARGUMENT), arg_begin.line_, arg_begin.column_));
     if (previous().type_ == TokenType::RPAREN) {
       break;
     }
@@ -156,23 +163,23 @@ std::unique_ptr<BlockNode> Parser::parse_block() {
     token = &advance();
   }
   if (token->type_ != TokenType::DIRECTIVE_CLOSE) {
-    error(*token, "expected ':>' after list of arguments");
+    error(*token, "ожидалось ':>' после списка аргументов");
   }
-  return std::make_unique<BlockNode>(id, std::move(args));
+  return std::make_unique<BlockNode>(id, std::move(args), line, column);
 }
 
-std::unique_ptr<DefineNode> Parser::parse_define() {
+std::unique_ptr<DefineNode> Parser::parse_define(size_t line, size_t column) {
   const Token *token = &advance();
   if (token->type_ == TokenType::SPACE) {
     token = &advance();
   }
   if (token->type_ != TokenType::ID) {
-    error(*token, "expected id after 'define'");
+    error(*token, "ожидался идентификатор после 'define'");
   }
   const std::string_view &id = token->lexeme_;
 
   if (is_at_end()) {
-    error(*token, "expected replacement string or ':>'");
+    error(*token, "ожидалась строка подстановки или ':>'");
   }
   token = &advance();
 
@@ -180,10 +187,10 @@ std::unique_ptr<DefineNode> Parser::parse_define() {
     token = &advance();
   }
   if (token->type_ == TokenType::DIRECTIVE_CLOSE) {
-    return std::make_unique<DefineNode>(id, "");
+    return std::make_unique<DefineNode>(id, "", line, column);
   }
   if (token->type_ == TokenType::DIRECTIVE_OPEN) {
-    error(*token, "'<:' is not allowed inside define directive");
+    error(*token, "'<:' не допускается внутри директивы define");
   }
   std::string_view value = token->lexeme_;
 
@@ -193,29 +200,29 @@ std::unique_ptr<DefineNode> Parser::parse_define() {
       break;
     }
     if (token->type_ == TokenType::DIRECTIVE_OPEN) {
-      error(*token, "'<:' is not allowed inside define directive");
+      error(*token, "'<:' не допускается внутри директивы define");
     }
     value = {value.data(), static_cast<size_t>((token->lexeme_.data() + token->lexeme_.size()) - value.data())};
   }
   if (token->type_ != TokenType::DIRECTIVE_CLOSE) {
-    error(*token, "expected closing ':>'");
+    error(*token, "ожидалось закрывающее ':>'");
   }
-  /* trim */
+  // trim
   if (previous(2).type_ == TokenType::SPACE) {
     token = &previous(2);
     value = {value.data(), static_cast<size_t>(token->lexeme_.data() - value.data())};
   }
-  return std::make_unique<DefineNode>(id, value);
+  return std::make_unique<DefineNode>(id, value, line, column);
 }
 
 std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro(MacroStop stop) {
   std::vector<std::unique_ptr<ASTNode>> macro;
   if (is_at_end()) {
     if (stop == MacroStop::DIRECTIVE_CLOSE) {
-      error(previous(), "expected closing ':>'");
+      error(previous(), "ожидалось закрывающее ':>'");
     }
     if (stop == MacroStop::BLOCK_ARGUMENT) {
-      error(previous(), "expected ',' or ')' to close/separate block arguments");
+      error(previous(), "ожидалась ',' или ')' для разделения/закрытия аргументов блока");
     }
     return macro;
   }
@@ -224,49 +231,51 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro(MacroStop stop) {
   while (!is_at_end()) {
     token = &advance();
     if (token->type_ == TokenType::ID) {
-      macro.push_back(std::make_unique<IdNode>(token->lexeme_));
+      macro.push_back(std::make_unique<IdNode>(token->lexeme_, token->line_, token->column_));
       continue;
     }
     if (token->type_ == TokenType::DIRECTIVE_OPEN) {
+      size_t line = token->line_;
+      size_t column = token->column_;
       token = &advance();
       if (token->type_ == TokenType::SPACE) {
         token = &advance();
       }
       if (token->type_ == TokenType::NEWLINE) {
-        macro.push_back(parse_scope());
+        macro.push_back(parse_scope(line, column));
         continue;
       }
       if (token->type_ != TokenType::ID) {
-        error (*token, "expected directive name or newline after '<:'");
+        error (*token, "ожидалось имя директивы или перенос строки после '<:'");
       }
 
       if (token->lexeme_ == "scope") {
-        macro.push_back(parse_scope());
+        macro.push_back(parse_scope(line, column));
       }
       else if (token->lexeme_ == "defblock") {
-        macro.push_back(parse_defblock());
+        macro.push_back(parse_defblock(line, column));
       }
       else if (token->lexeme_ == "block") {
-        macro.push_back(parse_block());
+        macro.push_back(parse_block(line, column));
       }
       else if (token->lexeme_ == "define") {
-        macro.push_back(parse_define());
+        macro.push_back(parse_define(line, column));
       }
       else {
-        error(*token, "unknown directive");
+        error(*token, "неизвестная директива");
       }
       continue;
     }
     if (token->type_ == TokenType::DIRECTIVE_CLOSE) {
       if (stop != MacroStop::DIRECTIVE_CLOSE) {
-        error(*token, "unexpected ':>'");
+        error(*token, "неожиданное ':>'");
       }
       size_t back = 2;
       if (previous(back).type_ == TokenType::SPACE) {
         ++back;
       }
       if (previous(back).type_ != TokenType::NEWLINE) {
-        error(*token, "expected newline before ':>'");
+        error(*token, "ожидался перенос строки перед ':>'");
       }
       return macro;
     }
@@ -277,11 +286,13 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro(MacroStop stop) {
     } 
     if (token->type_ == TokenType::LPAREN &&
       stop == MacroStop::BLOCK_ARGUMENT) {
-      error(*token, "'(' is not allowed inside block argument");
+      error(*token, "'(' не допускается внутри аргумента блока");
     }
 
-    /* TEXT */
+    // TEXT
     std::string_view text = token->lexeme_;
+    size_t line = token->line_;
+    size_t column = token->column_;
 
     while (!is_at_end()) {
       token = &peek();
@@ -297,13 +308,13 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro(MacroStop stop) {
       token = &advance();
       text = {text.data(), static_cast<size_t>((token->lexeme_.data() + token->lexeme_.size()) - text.data())};
     }
-    macro.push_back(std::make_unique<TextNode>(text));
+    macro.push_back(std::make_unique<TextNode>(text, line, column));
   }
   if (stop == MacroStop::DIRECTIVE_CLOSE) {
-    error(*token, "expected closing ':>'");
+    error(*token, "ожидалось закрывающее ':>'");
   }
   if (stop == MacroStop::BLOCK_ARGUMENT) {
-    error(*token, "expected ',' or ')' to close/separate block arguments");
+    error(*token, "ожидалась ',' или ')' для разделения/закрытия аргументов блока");
   }
   return macro;
 }
@@ -311,7 +322,7 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro(MacroStop stop) {
 [[noreturn]]
 void Parser::error(const Token &token, const std::string_view &message) const {
   throw std::runtime_error(
-    "Parser error at " +
+    "Ошибка парсера на " +
     std::to_string(token.line_) +
     ":" +
     std::to_string(token.column_) +

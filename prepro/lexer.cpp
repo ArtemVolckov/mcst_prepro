@@ -104,7 +104,7 @@ Token Lexer::next() {
     return {TokenType::ID, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
   }
 
-  /* TEXT */
+  // TEXT
   advance();
 
   while (!is_eof()) {
@@ -133,7 +133,7 @@ std::ostream &operator<<(std::ostream &os, TokenType type) {
     case TokenType::NEWLINE:         return os << "NEWLINE";
     case TokenType::SPACE:           return os << "SPACE";
   }
-  return os << "<unknown>";
+  return os << "<неизвестный>";
 }
 
 }

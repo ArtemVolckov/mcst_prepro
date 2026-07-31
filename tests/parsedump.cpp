@@ -4,10 +4,13 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <string>
 #include <string_view>
-#include <vector>
 #include <memory>
+#include <cstddef>
+#include <iterator>
+#include <exception>
 
 namespace {
 
@@ -89,7 +92,7 @@ void dump_ast(const prepro::ASTNode *node, int indent = 0) {
       break;
     }
     default:
-      std::cout << indent_str << "UNKNOWN_NODE";
+      std::cout << indent_str << "НЕИЗВЕСТНЫЙ_УЗЕЛ";
       break;
   }
 }
@@ -98,12 +101,12 @@ void dump_ast(const prepro::ASTNode *node, int indent = 0) {
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
-    std::cerr << "Usage: parsedump <file>\n";
+    std::cerr << "Использование: parsedump <файл>\n";
     return 1;
   } 
   std::ifstream file(argv[1]);
   if (!file) {
-    std::cerr << "Cannot open file\n";
+    std::cerr << "Не удалось открыть файл\n";
     return 1;
   }
   std::string src{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};

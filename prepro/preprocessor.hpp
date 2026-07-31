@@ -1,13 +1,19 @@
 #pragma once
 
-#include <prepro/ast.hpp>
-
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <memory>
 #include <vector>
-#include <utility>
+
+namespace prepro { 
+
+struct ASTNode;
+struct BlockNode;
+struct DefBlockNode;
+struct ScopeNode; 
+
+}
 
 namespace prepro {
 
@@ -43,7 +49,7 @@ private:
   void process_block(const BlockNode &block, Environment &env, std::string &out) const;
 
   [[noreturn]]
-  void error(const std::string_view &message) const;
+  void error(const ASTNode &node, const std::string_view &message) const;
 };
 
 }

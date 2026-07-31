@@ -2,9 +2,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <string>
 #include <string_view>
-#include <vector>
+#include <iterator>
 
 namespace {
 
@@ -26,12 +27,12 @@ std::string escape(const std::string_view &lexeme) {
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
-    std::cerr << "Usage: lexdump <file>\n";
+    std::cerr << "Использование: lexdump <файл>\n";
     return 1;
   } 
   std::ifstream file(argv[1]);
   if (!file) {
-    std::cerr << "Cannot open file\n";
+    std::cerr << "Не удалось открыть файл\n";
     return 1;
   }
   std::string src{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};

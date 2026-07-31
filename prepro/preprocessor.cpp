@@ -7,19 +7,21 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <cstddef>
+#include <stdexcept>
 
 namespace prepro {
 
 void Environment::define(const std::string_view &id, const std::string &value) {
   if (defines_.contains(id)) {
-    error("duplicate define '" + std::string(id) + "'");
+    error("повторное определение define '" + std::string(id) + "'");
   }
   defines_.emplace(id, value);
 }
 
 void Environment::define_block(const DefBlockNode &block) {
   if (defblocks_.contains(block.id_)) {
-    error("duplicate defblock '" + std::string(block.id_) + "'");
+    error("повторное определение defblock '" + std::string(block.id_) + "'");
   }
   defblocks_.emplace(block.id_, &block);
 }
@@ -53,11 +55,13 @@ std::string Preprocessor::process(const ScopeNode &root) const {
   return res;
 }
 
+// дочернее окружение - создается
 void Preprocessor::process_scope(const ScopeNode &scope, const Environment &env, std::string &out) const {
   Environment local(env); 
   process_macro(scope.macro_, local, out);
 }
 
+// дочернее окружение - не создается
 void Preprocessor::process_macro(const std::vector<std::unique_ptr<ASTNode>> &macro, Environment &env, std::string &out) const {
   for (const auto &node : macro) {
     process_node(*node, env, out);
@@ -87,7 +91,11 @@ void Preprocessor::process_node(const ASTNode &node, Environment &env, std::stri
     }
     case NodeType::DEF_BLOCK: {
       const auto &block = static_cast<const DefBlockNode &>(node);
-      env.define_block(block);
+      try {
+        env.define_block(block);
+      } catch (const std::runtime_error &e) {
+        error(block, e.what());
+      }
       return;
     }
     case NodeType::BLOCK: {
@@ -97,7 +105,11 @@ void Preprocessor::process_node(const ASTNode &node, Environment &env, std::stri
     }
     case NodeType::DEFINE: {
       const auto &define = static_cast<const DefineNode &>(node);
-      env.define(define.id_, std::string(define.value_));
+      try {
+        env.define(define.id_, std::string(define.value_));
+      } catch (const std::runtime_error &e) {
+        error(define, e.what());
+      }
       return;
     }
   }
@@ -106,24 +118,33 @@ void Preprocessor::process_node(const ASTNode &node, Environment &env, std::stri
 void Preprocessor::process_block(const BlockNode &block, Environment &env, std::string &out) const {
   const DefBlockNode *rule = env.find_block(block.id_);
   if (!rule) {
-    error("unknown block '" + std::string(block.id_) + "'");
+    error(block, "неизвестный макроблок '" + std::string(block.id_) + "'");
   }
   if (block.args_.size() != rule->args_.size()) {
-    error("wrong number of arguments for block '" + std::string(block.id_) + "'");
+    error(block, "неверное количество аргументов для макроблока '" + std::string(block.id_) + "'");
   }
   Environment local(env);
 
   for (size_t i = 0; i < block.args_.size(); ++i) {
     std::string value;
-    process_scope(static_cast<const ScopeNode &>(*block.args_[i]), env, value);
+    if (block.args_[i]) {
+      process_scope(*block.args_[i], env, value);
+    }
     local.define(rule->args_[i], value);
   }
   process_macro(rule->macro_, local, out);
 }
 
 [[noreturn]]
-void Preprocessor::error(const std::string_view &message) const {
-  throw std::runtime_error(std::string(message));
+void Preprocessor::error(const ASTNode &node, const std::string_view &message) const {
+  throw std::runtime_error(
+    "Ошибка препроцессора на " +
+    std::to_string(node.line_) +
+    ":" +
+    std::to_string(node.column_) +
+    ": " +
+    std::string(message)
+  );
 }
 
 [[noreturn]]
