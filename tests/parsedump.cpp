@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
     dump_ast(root.get());
     std::cout << "\n";
   } 
-  catch (const std::exception& e) {
+  catch (const std::exception &e) {
     std::cerr << e.what() << "\n";
     return 1;
   }

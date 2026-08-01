@@ -2,7 +2,7 @@ Program begin
 
 <: define PI 3.1415926 :>
 
-<: define AUTHOR Pavel Frolov :>
+<: define AUTHOR Artem Volkov :>
 
 <: defblock MAKE_STRUCT(name, body)
 struct name
