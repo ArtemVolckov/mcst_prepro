@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <cstddef>
+#include <optional>
 
 namespace prepro {
 
@@ -14,7 +15,9 @@ enum class NodeType {
   SCOPE,
   DEF_BLOCK,
   BLOCK,
-  DEFINE
+  DEFINE,
+  REG,
+  REGS
 };
 
 struct ASTNode {
@@ -80,6 +83,30 @@ struct DefineNode : public ASTNode {
 
   DefineNode(const std::string_view &id, const std::string_view &value, size_t line, size_t column) 
     : ASTNode(NodeType::DEFINE, line, column), id_(id), value_(value) {}
+};
+
+struct RegBinding {
+  std::string_view id_;
+  std::optional<std::string_view> reg_;
+};
+
+struct RegNode : public ASTNode {
+  std::vector<RegBinding> bindings_;
+
+  RegNode(std::vector<RegBinding> &&bindings, size_t line, size_t column)
+    : ASTNode(NodeType::REG, line, column), bindings_(std::move(bindings)) {}
+};
+
+struct RegRange {
+  std::string_view first_;
+  std::optional<size_t> last_;
+};
+
+struct RegsNode : public ASTNode {
+  std::vector<RegRange> ranges_;
+
+  RegsNode(std::vector<RegRange> &&ranges, size_t line, size_t column)
+    : ASTNode(NodeType::REGS, line, column), ranges_(std::move(ranges)) {}
 };
 
 }

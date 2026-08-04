@@ -215,6 +215,96 @@ std::unique_ptr<DefineNode> Parser::parse_define(size_t line, size_t column) {
   return std::make_unique<DefineNode>(id, value, line, column);
 }
 
+std::unique_ptr<RegNode> Parser::parse_reg(size_t line, size_t column) {
+  std::vector<RegBinding> bindings;
+
+  for (;;) {
+    const Token *token = &advance();
+    if (token->type_ == TokenType::SPACE) {
+      token = &advance();
+    }
+    if (token->type_ != TokenType::ID) {
+      error(*token, "ожидался идентификатор");
+    }
+    RegBinding binding;
+    binding.id_ = token->lexeme_;
+
+    token = &advance();
+    if (token->type_ == TokenType::SPACE) {
+      token = &advance();
+    }
+    if (token->type_ == TokenType::COLON) {
+      token = &advance();
+      if (token->type_ == TokenType::SPACE) {
+        token = &advance();
+      }
+      if (token->type_ != TokenType::REG) {
+        error(*token, "ожидался регистр");
+      }
+      binding.reg_ = token->lexeme_;
+
+      token = &advance();
+      if (token->type_ == TokenType::SPACE) {
+        token = &advance();
+      }
+    }
+    bindings.push_back(binding);
+
+    if (token->type_ == TokenType::DIRECTIVE_CLOSE) {
+      break;
+    }
+    if (token->type_ != TokenType::COMMA) {
+      error(*token, "ожидалась ',' или ':>'");
+    }
+  }
+  return std::make_unique<RegNode>(std::move(bindings), line, column);
+}
+
+std::unique_ptr<RegsNode> Parser::parse_regs(size_t line, size_t column) {
+  std::vector<RegRange> ranges;
+
+  for (;;) {
+    const Token *token = &advance();
+    if (token->type_ == TokenType::SPACE) {
+      token = &advance();
+    }
+    if (token->type_ != TokenType::REG) {
+      error(*token, "ожидался регистр");
+    }
+    RegRange range;
+    range.first_ = token->lexeme_;
+
+    token = &advance();
+    if (token->type_ == TokenType::SPACE) {
+      token = &advance();
+    }
+    else if (token->type_ == TokenType::RANGE_OP) {
+      token = &advance();
+      if (token->type_ != TokenType::TEXT) {
+        error(*token, "ожидался верхний номер диапазона");
+      }
+      try {
+        range.last_ = std::stoul(std::string(token->lexeme_));
+      } catch (...) {
+        error(*token, "ожидался верхний номер диапазона");
+      }
+      token = &advance();
+      if (token->type_ == TokenType::SPACE) {
+        token = &advance();
+      }
+    }
+    ranges.push_back(range);
+
+    if (token->type_ == TokenType::DIRECTIVE_CLOSE) {
+      break;
+    }
+    if (token->type_ != TokenType::COMMA) {
+      error(*token, "ожидалась ',' или ':>'");
+    }
+  }
+  return std::make_unique<RegsNode>(std::move(ranges), line, column);
+}
+
 std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro(MacroStop stop) {
   std::vector<std::unique_ptr<ASTNode>> macro;
   if (is_at_end()) {
@@ -260,6 +350,12 @@ std::vector<std::unique_ptr<ASTNode>> Parser::parse_macro(MacroStop stop) {
       }
       else if (token->lexeme_ == "define") {
         macro.push_back(parse_define(line, column));
+      }
+      else if (token->lexeme_ == "reg") {
+        macro.push_back(parse_reg(line, column));
+      }
+      else if (token->lexeme_ == "regs") {
+        macro.push_back(parse_regs(line, column));
       }
       else {
         error(*token, "неизвестная директива");

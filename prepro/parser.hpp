@@ -37,6 +37,8 @@ private:
   std::unique_ptr<DefBlockNode> parse_defblock(size_t line, size_t column);
   std::unique_ptr<BlockNode> parse_block(size_t line, size_t column);
   std::unique_ptr<DefineNode> parse_define(size_t line, size_t column);
+  std::unique_ptr<RegNode> parse_reg(size_t line, size_t column);
+  std::unique_ptr<RegsNode> parse_regs(size_t line, size_t column);
 
   std::vector<std::unique_ptr<ASTNode>> parse_macro(MacroStop stop);
   

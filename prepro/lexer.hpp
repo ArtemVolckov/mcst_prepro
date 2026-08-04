@@ -8,16 +8,20 @@
 namespace prepro {
 
 enum class TokenType {
-  ID,              // C id         
-  TEXT,            // остальной текст 
+  ID,              // C id
+  REG,             // регистр, спецификатор регистра 
+  SPACE,           // ' ', \t, \r
+  NEWLINE,         // \n
 
   DIRECTIVE_OPEN,  // <:              
   DIRECTIVE_CLOSE, // :>              
   LPAREN,          // (               
   RPAREN,          // )               
   COMMA,           // ,
-  NEWLINE,         // \n
-  SPACE            // ' ', \t, \r
+  COLON,           // :
+  RANGE_OP,        // ..
+  
+  TEXT             // остальной текст 
 };
 
 struct Token {

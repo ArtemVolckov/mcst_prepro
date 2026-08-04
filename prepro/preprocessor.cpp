@@ -26,6 +26,15 @@ void Environment::define_block(const DefBlockNode &block) {
   defblocks_.emplace(block.id_, &block);
 }
 
+void Environment::reg(const std::string &reg) {
+  for (const auto &r : regs_) {
+    if (r == reg) {
+      error("повторное определение регистра '" + reg + "'");
+    }
+  }
+  regs_.push_back(reg);
+}
+
 const std::string *Environment::find_define(const std::string_view &id) const {
   auto it = defines_.find(id);
   if (it != defines_.end()) {
@@ -46,6 +55,16 @@ const DefBlockNode *Environment::find_block(const std::string_view &id) const {
     return parent_->find_block(id);
   }
   return nullptr;
+}
+
+// пока возвращаем первый свободный регистр
+std::optional<std::string> Environment::take_reg() {
+  if (regs_.empty()) {
+    return std::nullopt;
+  }
+  std::string reg = std::move(regs_.front());
+  regs_.erase(regs_.begin());
+  return reg;
 }
 
 std::string Preprocessor::process(const ScopeNode &root) const {
@@ -112,6 +131,16 @@ void Preprocessor::process_node(const ASTNode &node, Environment &env, std::stri
       }
       return;
     }
+    case NodeType::REG: {
+      const auto &reg = static_cast<const RegNode &>(node);
+      process_reg(reg, env);
+      return;
+    }
+    case NodeType::REGS: {
+      const auto &regs = static_cast<const RegsNode &>(node);
+      process_regs(regs, env);
+      return;
+    }
   }
 }
 
@@ -133,6 +162,58 @@ void Preprocessor::process_block(const BlockNode &block, Environment &env, std::
     local.define(rule->args_[i], value);
   }
   process_macro(rule->macro_, local, out);
+}
+
+void Preprocessor::process_regs(const RegsNode &regs, Environment &env) const {
+  for (const auto &range : regs.ranges_) {
+    if (!range.last_) {
+      try {
+        env.reg(std::string(range.first_));
+      } catch (const std::runtime_error &e) {
+        error(regs, e.what());
+      }
+      continue;
+    }
+    std::string reg(range.first_);
+
+    size_t pos = reg.size();
+    while (pos > 0 && std::isdigit(reg[pos - 1])) {
+      --pos;
+    }
+    if (pos == reg.size()) {
+      error(regs, "у диапазона регистров отсутствует младший номер");
+    }
+    std::string prefix = reg.substr(0, pos);
+    size_t first = std::stoul(reg.substr(pos));
+
+    for (size_t i = first; i <= *range.last_; ++i) {
+      try {
+        env.reg(prefix + std::to_string(i));
+      } catch (const std::runtime_error &e) {
+        error(regs, e.what());
+      }
+    }
+  }
+}
+
+void Preprocessor::process_reg(const RegNode &reg, Environment &env) const {
+  for (const auto &binding : reg.bindings_) {
+    if (binding.reg_) {
+      const std::string_view &value = *binding.reg_;
+
+      // Полный регистр 
+      if (!value.empty() && std::isdigit(static_cast<unsigned char>(value.back()))) {
+        env.define(binding.id_, std::string(value));
+        continue;
+      }
+    }
+    // первый свободный регистр
+    auto value = env.take_reg();
+    if (!value) {
+      error(reg, "не осталось свободных регистров");
+    }
+    env.define(binding.id_, *value);
+  }
 }
 
 [[noreturn]]

@@ -73,6 +73,9 @@ Token Lexer::next() {
   if (match(":>")) {
     return {TokenType::DIRECTIVE_CLOSE, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
   }
+  if (match("..")) {
+    return {TokenType::RANGE_OP,        src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
+  }
 
   if (match('\n')) {
     return {TokenType::NEWLINE, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
@@ -86,9 +89,41 @@ Token Lexer::next() {
   if (match(','))  {
     return {TokenType::COMMA,   src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
   }
+  if (match(':'))  {
+    return {TokenType::COLON,   src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
+  }
 
   char c = peek();
 
+  // REG
+  if (c == '%') {
+    advance();
+    if (!is_id_start(peek())) {
+      return {TokenType::TEXT, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
+    }
+    advance();
+    while (is_id_start(peek())) {
+      advance();
+    }
+    if (peek() == '[') {
+      advance();
+      if (!(peek() >= '0' && peek() <= '9')) {
+        return {TokenType::TEXT, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
+      }
+      while (peek() >= '0' && peek() <= '9') {
+        advance();
+      }
+      if (peek() != ']') {
+        return {TokenType::TEXT, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
+      }
+      advance();
+      return {TokenType::REG, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
+    }
+    while (peek() >= '0' && peek() <= '9') {
+      advance();
+    }
+    return {TokenType::REG, src_.substr(start_pos, pos_ - start_pos), start_line, start_column};
+  }
   if (is_space_char(c)) {
     advance();
     while (is_space_char(peek())) {
@@ -110,10 +145,17 @@ Token Lexer::next() {
   while (!is_eof()) {
     c = peek();
 
-    if (is_space_char(c) || is_id_start(c) || c == '\n' || c == '(' || c == ')' || c == ',') {
+    if (is_space_char(c) || 
+        is_id_start(c)   || 
+        c == '\n'        || 
+        c == '('         || 
+        c == ')'         || 
+        c == ','         || 
+        c == ':'         || 
+        c == '%') {
       break;
     }
-    if (check("<:") || check(":>")) {
+    if (check("<:") || check(":>") || check("..")) {
       break;
     }
     advance();
@@ -124,14 +166,17 @@ Token Lexer::next() {
 std::ostream &operator<<(std::ostream &os, TokenType type) {
   switch (type) {
     case TokenType::ID:              return os << "ID";
-    case TokenType::TEXT:            return os << "TEXT";
+    case TokenType::REG:             return os << "REG";
+    case TokenType::SPACE:           return os << "SPACE";
+    case TokenType::NEWLINE:         return os << "NEWLINE";
     case TokenType::DIRECTIVE_OPEN:  return os << "DIRECTIVE_OPEN";
     case TokenType::DIRECTIVE_CLOSE: return os << "DIRECTIVE_CLOSE";
     case TokenType::LPAREN:          return os << "LPAREN";
     case TokenType::RPAREN:          return os << "RPAREN";
     case TokenType::COMMA:           return os << "COMMA";
-    case TokenType::NEWLINE:         return os << "NEWLINE";
-    case TokenType::SPACE:           return os << "SPACE";
+    case TokenType::COLON:           return os << "COLON";
+    case TokenType::RANGE_OP:        return os << "RANGE_OP";
+    case TokenType::TEXT:            return os << "TEXT";
   }
   return os << "<неизвестный>";
 }

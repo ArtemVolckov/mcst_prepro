@@ -1,0 +1,4 @@
+<: regs %dr0..2 :>
+<: reg a:%dr :>
+<: reg b:%dr :>
+a b
